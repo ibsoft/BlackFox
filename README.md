@@ -15,7 +15,7 @@ Easy to run and setup
 
 Who do I talk to?
 
-Repo owner Ioannis A. Bouhras ioannis.bouhras@gmail.com
+Repo owner Ioannis A. Bouhras info@ibsoft.com.gr
 
 
 
