@@ -1,6 +1,6 @@
 What is this repository for?
 
-    BlackFox is an IT tool written in pure Bash, which helps Administrators generate blocking lists for NGINX and Apache server, based on 218 list providers.
+BlackFox is an IT tool written in pure Bash, helping Administrators generate blocking lists for NGINX and Apache server, based on 218 list providers.
     v1.1
     http://blackfox.ibsoft.com.gr
 
@@ -11,13 +11,13 @@ How do I get set up?
 
 Contribution guidelines
 
-    Writing tests
-    Code review
-    Other guidelines
+Easy to run and setup
 
 Who do I talk to?
 
-    Repo owner Ioannis A. Bouhras ioannis.bouhras@gmail.com
+Repo owner Ioannis A. Bouhras ioannis.bouhras@gmail.com
+
+
 
 NGINX - Setup
 
