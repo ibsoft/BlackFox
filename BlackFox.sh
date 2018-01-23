@@ -1,5 +1,6 @@
 #!/bin/bash
 
+cd /home/ioannisb/bin/BlackFox/
 
 #
 # Ioannis A. Bouhras -- Block bad reputation IP Addresses from known blacklists
@@ -24,9 +25,9 @@ if [ -f "/usr/bin/dateutil" ] ; then
 	{
       echo "`dateutil today` " " `date +"%T"` Toolset not found, installing dateutil.">>$LOGFILE
 	  cd dateutil
-	  make clean
 	  make
-	  cp dateutil /usr/bin/ 
+	  cp dateutil /usr/bin/
+      cd ..
 	}
 fi
 
@@ -61,6 +62,18 @@ rm -rf nginx/blockips.conf
 echo "`dateutil today` " " `date +"%T"` Cleaning existing apache/htaccess.">>$LOGFILE
 rm -rf apache/htaccess
 echo "order allow,deny" >apache/htaccess
+
+if [ -f "tmp/nginx-ipset.tmp" ] ; then
+{
+  rm -rf tmp/nginx-ipset.tmp
+}
+fi
+
+if [ -f "tmp/apache-ipset.tmp" ] ; then
+{
+  rm -rf tmp/apache-ipset.tmp
+}
+fi
 
 
 #Goto queue
@@ -97,7 +110,7 @@ while read p; do
 		{
 		  mkdir -p $p
 		  echo "`dateutil today` " " `date +"%T"` Downloading $p.">>$LOGFILE
-		  timeout -s KILL 60 wget -p $p $p
+		  timeout -s KILL 60 wget --trust-server-names -p $p $p
 		  echo $p >>../logs/success-providers.log
 		}
     else
@@ -105,7 +118,13 @@ while read p; do
         echo "`dateutil today` " " `date +"%T"` Provider $p not active.">>$LOGFILE
         }
 	fi
-done <../providers.conf 
+done <../providers.conf
+
+
+echo "`dateutil today` " " `date +"%T"` Unziping files.">>$LOGFILE
+
+find . -name '*.gz' -exec gunzip '{}' \;
+ 
 
 echo "`dateutil today` " " `date +"%T"` Fetching providers completed.">>$LOGFILE
 
@@ -124,33 +143,46 @@ do
 	then
 	{
 	extract=$(`rgrep -r -E -o '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)' $file * |awk -F":" '{print "deny "$2";"}'>>../tmp/nginx-ipset.tmp`)
-	sed '$!N; /^\(.*\)\n\1$/!P; D' ../tmp/nginx-ipset.tmp >>../nginx/blockips.conf
 	}
 	fi
+        
 
 	if [ "$APACHE" == "yes" ]
 	then
 	{
 	extract=$(`rgrep -r -E -o '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)' $file * |awk -F":" '{print "deny from "$2""}'>>../tmp/apache-ipset.tmp`)
-	sed '$!N; /^\(.*\)\n\1$/!P; D' ../tmp/apache-ipset.tmp >>../apache/htaccess
 	}
 	fi
+	
+
+        
 done
 
 if [ "$NGINX" == "yes" ]; then
     {
-       echo "`dateutil today` " " `date +"%T"` `cat ../nginx/blockips.conf|wc -l` Bad reputation IP Addresses generated for Apache.">>$LOGFILE
+       echo "`dateutil today` " " `date +"%T"` Removing dublicates.">>$LOGFILE
+       #sed '$!N; /^\(.*\)\n\1$/!P; D' ../tmp/nginx-ipset.tmp >>../nginx/blockips.conf
+       awk '!a[$0]++' ../tmp/nginx-ipset.tmp >>../nginx/blockips.conf
+       echo "`dateutil today` " " `date +"%T"` `cat ../nginx/blockips.conf|wc -l` Bad reputation IP Addresses generated for NGINX.">>$LOGFILE
        echo "`dateutil today` " " `date +"%T"` Generation of nginx blockips.conf completed.">>$LOGFILE
-
+       echo "`dateutil today` " " `date +"%T"` Copying file to NGINX HOME.">>$LOGFILE
+       cp ../nginx/blockips.conf $NGINX_HOME
+       echo "`dateutil today` " " `date +"%T"` Reloading NGINX.">>$LOGFILE
+       service nginx reload
     }
 fi
 
 if [ "$APACHE" == "yes" ]; then
     {
+       echo "`dateutil today` " " `date +"%T"` Removing dublicates.">>$LOGFILE
+       #sed '$!N; /^\(.*\)\n\1$/!P; D' ../tmp/apache-ipset.tmp >>../apache/htaccess
+       awk '!a[$0]++' ../tmp/apache-ipset.tmp >>../apache/htaccess
        echo "`dateutil today` " " `date +"%T"` `cat ../nginx/blockips.conf|wc -l` Bad reputation IP Addresses generated for Nginx.">>$LOGFILE
        echo "allow from all" >>../apache/htaccess
        echo "`dateutil today` " " `date +"%T"` Generation of apache htaccess completed.">>$LOGFILE
-
+       echo "`dateutil today` " " `date +"%T"` Copying file to APACHE HOME.">>$LOGFILE
+       cp ../apache/htaccess $APACHE_HOME.htaccess
+       service apache2 reload
     }
 fi
 
@@ -193,7 +225,6 @@ else
      then
      {
      extract=$(`rgrep -r -E -o '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)' $file * |awk -F":" '{print "deny "$2";"}'>>../tmp/nginx-ipset.tmp`)
-     sed '$!N; /^\(.*\)\n\1$/!P; D' ../tmp/nginx-ipset.tmp >>../nginx/blockips.conf
      }
 
      fi
@@ -202,24 +233,38 @@ else
      then
      {
      extract=$(`rgrep -r -E -o '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0- 9]|[01]?[0-9][0-9]?)' $file * |awk -F":" '{print "deny from "$2""}'>>../tmp/apache-ipset.tmp`)
-     sed '$!N; /^\(.*\)\n\1$/!P; D' ../tmp/apache-ipset.tmp >>../apache/htaccess
      }
      fi
  done
 
  if [ "$NGINX" == "yes" ]; then
      {
+        echo "`dateutil today` " " `date +"%T"` Removing dublicates.">>$LOGFILE
+        #sed '$!N; /^\(.*\)\n\1$/!P; D' ../tmp/nginx-ipset.tmp >>../nginx/blockips.conf
+        awk '!a[$0]++' ../tmp/nginx-ipset.tmp >>../nginx/blockips.conf
         echo "`dateutil today` " " `date +"%T"` `cat ../nginx/blockips.conf|wc -l` Bad reputation IP Addresses generated for Apache.">>$LOGFILE
         echo "`dateutil today` " " `date +"%T"` Generation of nginx blockips.conf completed.">>$LOGFILE
+        echo "`dateutil today` " " `date +"%T"` Copying file to NGINX HOME.">>$LOGFILE
+        cp ../nginx/blockips.conf $NGINX_HOME
+        echo "`dateutil today` " " `date +"%T"` Reloading NGINX.">>$LOGFILE
+        service nginx reload
+
 
      }
  fi
 
  if [ "$APACHE" == "yes" ]; then
      {
+        echo "`dateutil today` " " `date +"%T"` Removing dublicates.">>$LOGFILE
+        #sed '$!N; /^\(.*\)\n\1$/!P; D' ../tmp/apache-ipset.tmp >>../apache/htaccess
+        awk '!a[$0]++' ../tmp/apache-ipset.tmp >>../apache/htaccess
         echo "`dateutil today` " " `date +"%T"` `cat ../nginx/blockips.conf|wc -l` Bad reputation IP Addresses generated for Nginx.">>$LOGFILE
         echo "allow from all" >>../apache/htaccess
         echo "`dateutil today` " " `date +"%T"` Generation of apache htaccess completed.">>$LOGFILE
+        echo "`dateutil today` " " `date +"%T"` Copying file to APACHE HOME.">>$LOGFILE
+        cp ../apache/htaccess $APACHE_HOME.htaccess
+        service apache2 reload
+
 
      }
  fi
