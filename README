@@ -1,5 +1,7 @@
 BlackFox is an IT tool written in pure Bash, wich help Administrators generate blocking lists for NGINX and Apache server, based on 218 list providers.
 
+uncomment providers from providers.available
+
 https://atlas.arbor.net/summary/attacks.csv
 https://atlas.arbor.net/summary/botnets.csv
 #https://atlas.arbor.net/summary/fastflux.csv
