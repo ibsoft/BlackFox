@@ -1,9 +1,13 @@
-NGINX=yes
+NGINX=no
 APACHE=no
-UFW=no
+UFW=yes
+UFW_BLOCK_COUNTRIES=yes
+###
 GENERATE_FROM_CURRENT=no
 NGINX_HOME=/etc/nginx/
 APACHE_HOME=/etc/apache2/
 UFW_HOME=/etc/ufw/
+###
 DOWNLOAD_ZONES=no
-DENY_COUNTRIES=""
+DENY_COUNTRIES="ru ch tr"
+
